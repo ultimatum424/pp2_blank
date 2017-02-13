@@ -1,11 +1,19 @@
+#include "stdafx.h"
 #include "Bank.h"
+#include "CSyncPrimitives.h"
 
-CBank::CBank()
+CBank::CBank(const unsigned& clientsCount, SyncPrimitivesEnum primitivesType)
+	:m_syncPrimitives(primitivesType)
 {
 
 	m_clients = std::vector<CBankClient>();
 	m_threads = std::vector<HANDLE>();
 	m_totalBalance = 0;
+
+	for (unsigned i = 0; i < clientsCount; i++)
+	{
+		CreateClient();
+	}	
 }
 
 
@@ -21,7 +29,9 @@ CBankClient* CBank::CreateClient()
 
 void CBank::UpdateClientBalance(CBankClient &client, int value)
 {
+	m_syncPrimitives.StartOfSyncZone();
 	int totalBalance = GetTotalBalance();
+	int requestBalance = totalBalance + value;
 	std::cout << "Client " << client.GetId() << " initiates reading total balance. Total = " << totalBalance << "." << std::endl;
 	
 	SomeLongOperations();
@@ -33,13 +43,13 @@ void CBank::UpdateClientBalance(CBankClient &client, int value)
 		<< ". Must be: " << GetTotalBalance() + value << "." << std::endl;
 
 	// Check correctness of transaction through actual total balance
-	if (totalBalance + value < 0) 
+	if (requestBalance < 0)
 	{
 		std::cout << "! ERROR !" << std::endl;
 	}
-	else { SetTotalBalance(totalBalance + value); }
+	else { SetTotalBalance(requestBalance); }
 
-	
+	m_syncPrimitives.EndOfSyncZone();
 }
 
 size_t CBank::GetClientCount() const
@@ -49,7 +59,7 @@ size_t CBank::GetClientCount() const
 
 DWORD CBank::WaitForClients()
 {
-	return WaitForMultipleObjects(m_threads.size(), m_threads.data(), true, INFINITY);
+	return WaitForMultipleObjects(DWORD(GetClientCount()), m_threads.data(), true, INFINITY);
 }
 
 
@@ -67,5 +77,5 @@ void CBank::SetTotalBalance(int value)
 void CBank::SomeLongOperations()
 {
 	// fixed TODO
-	Sleep(200);
+	Sleep(20);
 }

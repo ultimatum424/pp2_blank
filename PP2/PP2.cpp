@@ -2,14 +2,13 @@
 #include "Bank.h"
 #include "BankClient.h"
 
+
 int main()
 {
-	CBank* bank = new CBank();
-	CBankClient* client1 = bank->CreateClient();
-	CBankClient* client2 = bank->CreateClient();
-	CBankClient* client3 = bank->CreateClient();
+	CBank* bank = new CBank(2, SyncPrimitivesEnum::Mutex);
+	
 
-	// TODO: WaitForMultipleObjects
+	// fixed TODO: WaitForMultipleObjects
 	while (true)
 	{
 		bank->WaitForClients();
